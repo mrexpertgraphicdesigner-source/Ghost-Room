@@ -2,792 +2,1010 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>☠ GHOST ROOM — Encrypted Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ghost Room — Private Chat</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --green: #00ff88;
-  --green-dim: #00aa55;
-  --green-faint: rgba(0,255,136,0.08);
-  --green-border: rgba(0,255,136,0.2);
-  --bg: #070d09;
-  --bg2: #0d1a12;
-  --bg3: #0a120d;
-  --red: #ff3344;
-  --amber: #ffbb00;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;
+  --surface:#1a1a1a;
+  --surface2:#242424;
+  --surface3:#2e2e2e;
+  --border:#333;
+  --accent:#25d366;
+  --accent2:#128c7e;
+  --text:#e8e8e8;
+  --text2:#aaa;
+  --text3:#666;
+  --bubble-me:#005c4b;
+  --bubble-them:#1f2c34;
+  --radius:18px;
+  --font:'Inter',sans-serif;
 }
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
 
-html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--green);
-  font-family: 'Rajdhani', sans-serif;
-  overflow: hidden;
+/* ── SPLASH ── */
+#splash{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  background:var(--bg);z-index:100;transition:opacity .4s;
 }
+#splash .logo{font-size:52px}
+#splash h1{font-size:22px;font-weight:600;letter-spacing:.5px}
+#splash p{font-size:13px;color:var(--text2)}
 
-/* ── SCANLINE OVERLAY ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 2px,
-    rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
-  );
-  pointer-events: none; z-index: 9999;
+/* ── LOGIN ── */
+#login{
+  display:none;flex-direction:column;align-items:center;
+  justify-content:center;height:100vh;padding:20px;gap:16px;
+  background:var(--bg);
 }
+.login-card{
+  background:var(--surface);border-radius:20px;
+  padding:28px 24px;width:100%;max-width:380px;
+  border:1px solid var(--border);
+}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo .icon{font-size:42px;display:block;margin-bottom:8px}
+.login-logo h2{font-size:20px;font-weight:600}
+.login-logo p{font-size:13px;color:var(--text2);margin-top:4px}
 
-#app { height: 100vh; display: flex; flex-direction: column; }
+.tabs{display:flex;background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:20px}
+.tab{
+  flex:1;padding:8px;text-align:center;border-radius:10px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  color:var(--text2);transition:all .2s;
+}
+.tab.on{background:var(--accent);color:#000}
 
-/* ══════════════════════════════
-   SCREEN SYSTEM
-══════════════════════════════ */
-.screen { display: none; flex-direction: column; height: 100vh; }
-.screen.active { display: flex; }
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.field input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-family:var(--font);
+  font-size:14px;padding:11px 14px;outline:none;transition:border .2s;
+}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--text3)}
 
-/* ══════════════════════════════
-   LOGIN SCREEN
-══════════════════════════════ */
-#login {
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 20px;
-  background: var(--bg);
+.avatar-row{display:flex;gap:8px;flex-wrap:wrap}
+.av{
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:all .2s;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface2);
 }
+.av.on{border-color:#fff;transform:scale(1.15)}
 
-.ghost-logo {
-  font-size: 52px;
-  animation: breathe 3s ease-in-out infinite;
-  user-select: none;
+.btn{
+  width:100%;padding:13px;border-radius:12px;border:none;
+  background:var(--accent);color:#000;font-family:var(--font);
+  font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;
 }
-@keyframes breathe {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.95); }
-}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:8px}
 
-.logo-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 24px; letter-spacing: 10px;
-  color: var(--green); text-transform: uppercase;
-}
+.errmsg{font-size:12px;color:#ff6b6b;text-align:center;margin-top:10px;min-height:16px}
 
-.logo-sub {
-  font-size: 12px; color: var(--green-dim);
-  letter-spacing: 3px; text-align: center;
+/* ── WAITING ── */
+#waiting{
+  display:none;flex-direction:column;align-items:center;
+  justify-content:center;height:100vh;gap:18px;padding:20px;
+  background:var(--bg);text-align:center;
 }
+.wait-card{
+  background:var(--surface);border-radius:20px;
+  padding:24px;width:100%;max-width:380px;border:1px solid var(--border);
+}
+.pulse-dot{
+  width:14px;height:14px;border-radius:50%;background:var(--accent);
+  animation:pulse 1.5s ease-in-out infinite;display:inline-block;margin-right:6px;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
 
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--green-border);
-  padding: 28px 24px;
-  width: 100%; max-width: 400px;
-  position: relative;
+.peer-box{
+  background:var(--surface2);border-radius:12px;
+  padding:14px;margin:14px 0;text-align:left;
 }
-.card::before {
-  content: '';
-  position: absolute; top: -1px; left: 24px; right: 24px;
-  height: 1px; background: var(--green);
+.peer-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.peer-id{
+  font-family:monospace;font-size:13px;color:var(--accent);
+  word-break:break-all;cursor:pointer;line-height:1.6;
 }
+.copy-btn{
+  margin-top:10px;width:100%;padding:9px;border-radius:10px;
+  background:var(--accent);color:#000;border:none;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+}
+.members-list{margin-top:12px}
+.member-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.member-item:last-child{border:none}
+.member-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--surface3)}
 
-/* TABS */
-.tabs { display: flex; margin-bottom: 22px; }
-.tab {
-  flex: 1; padding: 9px 4px; text-align: center;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; letter-spacing: 2px; cursor: pointer;
-  border: 1px solid rgba(0,255,136,0.15);
-  color: var(--green-dim); transition: all 0.2s;
-  user-select: none;
+.connect-row{display:flex;gap:8px;margin-top:12px}
+.connect-row input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:var(--font);
+  font-size:13px;padding:9px 12px;outline:none;
 }
-.tab:hover { color: var(--green); }
-.tab.on { background: var(--green-faint); border-color: var(--green); color: var(--green); }
-
-/* FIELD */
-.field { margin-bottom: 14px; }
-.field label {
-  display: block; font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px; color: var(--green-dim);
-  margin-bottom: 6px;
-}
-.field input {
-  width: 100%; background: #050e08;
-  border: 1px solid rgba(0,255,136,0.2);
-  color: var(--green); font-family: 'Share Tech Mono', monospace;
-  font-size: 14px; padding: 9px 12px; outline: none;
-  transition: border-color 0.2s; letter-spacing: 1px;
-}
-.field input:focus { border-color: var(--green); }
-.field input::placeholder { color: rgba(0,255,136,0.2); letter-spacing: 0; }
-
-/* COLOR PICKER */
-.dots { display: flex; gap: 8px; margin-top: 6px; }
-.dot {
-  width: 26px; height: 26px; border-radius: 50%;
-  cursor: pointer; border: 2px solid transparent;
-  transition: all 0.15s;
-}
-.dot.on { border-color: #fff; transform: scale(1.25); }
-
-/* MAIN BTN */
-.btn-main {
-  width: 100%; padding: 12px; background: transparent;
-  border: 1px solid var(--green); color: var(--green);
-  font-family: 'Share Tech Mono', monospace; font-size: 12px;
-  letter-spacing: 5px; cursor: pointer; text-transform: uppercase;
-  transition: all 0.2s; margin-top: 6px;
-}
-.btn-main:hover { background: var(--green-faint); }
-.btn-main:active { transform: scale(0.98); }
-.btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.errmsg {
-  font-family: 'Share Tech Mono', monospace; font-size: 11px;
-  color: var(--red); text-align: center; margin-top: 10px;
-  letter-spacing: 1px; min-height: 16px;
+.connect-row input:focus{border-color:var(--accent)}
+.connect-row button{
+  padding:9px 14px;border-radius:10px;border:none;
+  background:var(--accent);color:#000;font-weight:600;
+  font-size:13px;cursor:pointer;white-space:nowrap;
 }
 
-.footnote {
-  font-size: 11px; color: rgba(0,255,136,0.25);
-  text-align: center; line-height: 1.7;
-  font-family: 'Share Tech Mono', monospace;
-  max-width: 360px; letter-spacing: 0.5px;
+/* ── CHAT ── */
+#chat{display:none;flex-direction:column;height:100vh;background:var(--bg)}
+
+.chat-hdr{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 16px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.hdr-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface2);flex-shrink:0}
+.hdr-info{flex:1}
+.hdr-name{font-size:15px;font-weight:600}
+.hdr-status{font-size:12px;color:var(--accent);display:flex;align-items:center;gap:4px}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.hdr-members{display:flex;gap:-4px}
+.hdr-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--surface3);margin-left:-6px;border:2px solid var(--surface)}
+.btn-exit-sm{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:4px;border-radius:8px}
+.btn-exit-sm:hover{background:var(--surface2)}
+
+.enc-badge{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:6px;background:rgba(37,211,102,.08);
+  font-size:11px;color:var(--accent);flex-shrink:0;
+  border-bottom:1px solid rgba(37,211,102,.12);
 }
 
-/* ══════════════════════════════
-   CONNECTING SCREEN
-══════════════════════════════ */
-#connecting {
-  align-items: center; justify-content: center; gap: 20px;
+.msgs{
+  flex:1;overflow-y:auto;padding:12px 16px;
+  display:flex;flex-direction:column;gap:4px;
+  scroll-behavior:smooth;
 }
-.spinner {
-  width: 48px; height: 48px;
-  border: 2px solid var(--green-border);
-  border-top-color: var(--green);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.conn-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 14px; letter-spacing: 4px; color: var(--green);
-}
-.conn-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--green-dim); letter-spacing: 2px;
-  text-align: center; max-width: 320px; line-height: 1.8;
-}
-#peer-id-box {
-  background: var(--bg2); border: 1px solid var(--green-border);
-  padding: 14px 20px; text-align: center; max-width: 380px; width: 100%;
-}
-#peer-id-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--green-dim); letter-spacing: 2px; margin-bottom: 8px;
-}
-#peer-id-val {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px; color: var(--amber); letter-spacing: 2px;
-  word-break: break-all; cursor: pointer; transition: opacity 0.2s;
-}
-#peer-id-val:hover { opacity: 0.7; }
-#copy-hint {
-  font-size: 10px; color: var(--green-dim); margin-top: 6px;
-  font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;
+.msgs::-webkit-scrollbar{width:4px}
+.msgs::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+
+/* DATE DIVIDER */
+.date-div{
+  text-align:center;margin:8px 0;
+  font-size:11px;color:var(--text2);
+  background:var(--surface2);display:inline-block;
+  padding:3px 12px;border-radius:20px;align-self:center;
 }
 
-/* CONNECT TO FRIEND */
-#connect-form {
-  display: flex; gap: 8px; width: 100%; max-width: 380px;
-}
-#connect-form input {
-  flex: 1; background: #050e08;
-  border: 1px solid var(--green-border);
-  color: var(--green); font-family: 'Share Tech Mono', monospace;
-  font-size: 12px; padding: 8px 12px; outline: none;
-  letter-spacing: 1px;
-}
-#connect-form input:focus { border-color: var(--green); }
-#connect-form input::placeholder { color: rgba(0,255,136,0.2); }
-#connect-form button {
-  background: transparent; border: 1px solid var(--green);
-  color: var(--green); font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; padding: 8px 14px; cursor: pointer; letter-spacing: 2px;
-  white-space: nowrap;
-}
-#connect-form button:hover { background: var(--green-faint); }
-
-/* ══════════════════════════════
-   CHAT SCREEN
-══════════════════════════════ */
-#chat {
-  background: var(--bg);
+/* SYSTEM MSG */
+.sys-msg{
+  text-align:center;font-size:12px;color:var(--text3);
+  padding:4px 0;
 }
 
-.chat-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px; border-bottom: 1px solid var(--green-border);
-  background: var(--bg2); flex-shrink: 0;
-}
-.hdr-left { display: flex; flex-direction: column; gap: 2px; }
-.hdr-room {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 14px; color: var(--green); letter-spacing: 3px;
-}
-.hdr-status {
-  font-size: 10px; color: var(--green-dim); letter-spacing: 2px;
-  font-family: 'Share Tech Mono', monospace;
-}
-.hdr-right { display: flex; align-items: center; gap: 10px; }
-.badge {
-  background: var(--green-faint); border: 1px solid var(--green-border);
-  padding: 3px 10px; font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; letter-spacing: 1px;
-}
-.conn-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--green); display: inline-block;
-  animation: blink 1.5s ease-in-out infinite;
-}
-.conn-dot.offline { background: var(--red); animation: none; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* MESSAGE BUBBLES */
+.msg-row{display:flex;flex-direction:column;max-width:75%}
+.msg-row.me{align-self:flex-end;align-items:flex-end}
+.msg-row.them{align-self:flex-start;align-items:flex-start}
 
-.btn-exit {
-  background: transparent; border: 1px solid rgba(255,51,68,0.3);
-  color: var(--red); font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; padding: 4px 10px; cursor: pointer; letter-spacing: 1px;
-}
-.btn-exit:hover { background: rgba(255,51,68,0.1); }
+.msg-sender{font-size:11px;font-weight:600;margin-bottom:3px;padding:0 4px}
 
-/* MESSAGES */
-.msgs {
-  flex: 1; overflow-y: auto; padding: 14px 16px;
-  display: flex; flex-direction: column; gap: 10px;
-  background: var(--bg3);
+.bubble{
+  padding:8px 12px;border-radius:var(--radius);
+  font-size:14px;line-height:1.5;position:relative;
+  max-width:100%;word-break:break-word;
 }
-.msgs::-webkit-scrollbar { width: 3px; }
-.msgs::-webkit-scrollbar-track { background: transparent; }
-.msgs::-webkit-scrollbar-thumb { background: var(--green-border); }
-
-.msg-wrap { display: flex; flex-direction: column; max-width: 78%; }
-.msg-wrap.me { align-self: flex-end; align-items: flex-end; }
-.msg-wrap.them { align-self: flex-start; align-items: flex-start; }
-
-.msg-meta {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; margin-bottom: 4px; letter-spacing: 1px;
+.msg-row.me .bubble{
+  background:var(--bubble-me);border-bottom-right-radius:4px;
 }
-.msg-bubble {
-  padding: 8px 14px; font-size: 15px; line-height: 1.5;
-  max-width: 100%; word-break: break-word;
+.msg-row.them .bubble{
+  background:var(--bubble-them);border-bottom-left-radius:4px;
 }
-.msg-wrap.me .msg-bubble {
-  background: var(--green-faint); border: 1px solid var(--green-border);
-}
-.msg-enc {
-  font-family: 'Share Tech Mono', monospace; font-size: 9px;
-  color: rgba(0,255,136,0.18); margin-top: 3px; word-break: break-all;
+.msg-time{
+  font-size:10px;color:var(--text3);margin-top:2px;
+  padding:0 4px;
 }
 
-.sysmsg {
-  text-align: center; font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: rgba(0,255,136,0.3); letter-spacing: 2px;
-  padding: 3px 0;
+/* VOICE BUBBLE */
+.voice-bubble{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:var(--radius);
+  min-width:200px;max-width:260px;
 }
+.msg-row.me .voice-bubble{background:var(--bubble-me);border-bottom-right-radius:4px}
+.msg-row.them .voice-bubble{background:var(--bubble-them);border-bottom-left-radius:4px}
+
+.play-btn{
+  width:38px;height:38px;border-radius:50%;border:none;
+  background:var(--accent);color:#000;font-size:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:opacity .2s;
+}
+.play-btn:hover{opacity:.85}
+.play-btn.playing{background:#ff6b6b}
+
+.waveform{
+  flex:1;display:flex;align-items:center;gap:2px;height:30px;cursor:pointer;
+}
+.wave-bar{
+  flex:1;background:rgba(255,255,255,.3);border-radius:2px;
+  transition:background .2s;min-width:2px;
+}
+.wave-bar.played{background:rgba(255,255,255,.8)}
+.wave-bar.active{background:var(--accent)}
+
+.voice-dur{font-size:11px;color:var(--text2);white-space:nowrap;min-width:32px}
 
 /* INPUT AREA */
-.enc-peek {
-  font-family: 'Share Tech Mono', monospace; font-size: 9px;
-  color: rgba(0,255,136,0.22); padding: 4px 16px;
-  background: var(--bg2); border-top: 1px solid rgba(0,255,136,0.08);
-  min-height: 22px; word-break: break-all; flex-shrink: 0;
+.input-area{
+  padding:8px 12px;background:var(--surface);
+  border-top:1px solid var(--border);flex-shrink:0;
 }
+.input-row{
+  display:flex;align-items:flex-end;gap:8px;
+}
+.msg-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:22px;color:var(--text);font-family:var(--font);
+  font-size:14px;padding:10px 16px;outline:none;resize:none;
+  max-height:100px;line-height:1.4;transition:border .2s;
+}
+.msg-input:focus{border-color:var(--surface3)}
+.msg-input::placeholder{color:var(--text3)}
+.msg-input:disabled{opacity:.5}
 
-.input-row {
-  display: flex; gap: 8px; padding: 12px 16px;
-  background: var(--bg2); border-top: 1px solid var(--green-border);
-  flex-shrink: 0;
+.icon-btn{
+  width:44px;height:44px;border-radius:50%;border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;font-size:20px;flex-shrink:0;
 }
-.msg-box {
-  flex: 1; background: #050e08; border: 1px solid var(--green-border);
-  color: var(--green); font-family: 'Rajdhani', sans-serif;
-  font-size: 15px; padding: 9px 12px; outline: none;
-  resize: none; min-height: 42px; max-height: 110px;
-  line-height: 1.4; transition: border-color 0.2s;
+.send-btn{background:var(--accent);color:#000}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.mic-btn{background:var(--surface2);color:var(--text)}
+.mic-btn:hover{background:var(--surface3)}
+.mic-btn.recording{background:#ff6b6b;color:#fff;animation:rec-pulse 1s ease-in-out infinite}
+@keyframes rec-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,.4)}50%{box-shadow:0 0 0 10px rgba(255,107,107,0)}}
+
+/* REC INDICATOR */
+.rec-bar{
+  display:none;align-items:center;gap:10px;
+  padding:6px 4px;font-size:13px;color:#ff6b6b;
 }
-.msg-box:focus { border-color: rgba(0,255,136,0.6); }
-.msg-box::placeholder { color: rgba(0,255,136,0.25); }
-.msg-box:disabled { opacity: 0.4; }
-.btn-send {
-  background: var(--green-faint); border: 1px solid var(--green);
-  color: var(--green); font-family: 'Share Tech Mono', monospace;
-  font-size: 12px; padding: 10px 16px; cursor: pointer;
-  letter-spacing: 2px; white-space: nowrap;
+.rec-bar.show{display:flex}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;animation:pulse 1s infinite}
+
+/* DISCONNECTED TOAST */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:10px 18px;font-size:13px;
+  color:var(--text);display:none;z-index:50;white-space:nowrap;
 }
-.btn-send:hover { background: rgba(0,255,136,0.15); }
-.btn-send:active { transform: scale(0.97); }
-.btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.toast.show{display:block;animation:toast-in .3s}
+@keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* RESPONSIVE */
+@media(max-width:480px){
+  .login-card{border-radius:16px;padding:22px 18px}
+  .msg-row{max-width:88%}
+}
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- ══ SCREEN 1: LOGIN ══ -->
-  <div id="login" class="screen active">
-    <div class="ghost-logo">☠</div>
-    <div class="logo-title">GHOST ROOM</div>
-    <div class="logo-sub">end-to-end encrypted &nbsp;•&nbsp; peer-to-peer &nbsp;•&nbsp; no servers</div>
-
-    <div class="card">
-      <div class="tabs">
-        <div class="tab on" id="t-host" onclick="switchTab('host')">ROOM BANANA</div>
-        <div class="tab" id="t-join" onclick="switchTab('join')">ROOM JOIN KARNA</div>
-      </div>
-
-      <!-- HOST FORM -->
-      <div id="f-host">
-        <div class="field">
-          <label>▸ ROOM KA NAAM</label>
-          <input id="h-room" placeholder="koi bhi naam" maxlength="30" />
-        </div>
-        <div class="field">
-          <label>▸ SECRET PASSWORD (dost ko batao)</label>
-          <input id="h-pass" type="password" placeholder="strong password rakho" maxlength="60" />
-        </div>
-        <div class="field">
-          <label>▸ APNA NAAM</label>
-          <input id="h-name" placeholder="code name ya asli naam" maxlength="20" />
-        </div>
-        <div class="field">
-          <label>▸ APNA COLOR</label>
-          <div class="dots" id="h-dots">
-            <div class="dot on" style="background:#00ff88" data-c="#00ff88"></div>
-            <div class="dot" style="background:#ffbb00" data-c="#ffbb00"></div>
-            <div class="dot" style="background:#ff8844" data-c="#ff8844"></div>
-            <div class="dot" style="background:#44aaff" data-c="#44aaff"></div>
-            <div class="dot" style="background:#ff44aa" data-c="#ff44aa"></div>
-            <div class="dot" style="background:#cc88ff" data-c="#cc88ff"></div>
-          </div>
-        </div>
-        <button class="btn-main" onclick="startHost()">🔐 ROOM BANAO</button>
-      </div>
-
-      <!-- JOIN FORM -->
-      <div id="f-join" style="display:none">
-        <div class="field">
-          <label>▸ ROOM KA NAAM</label>
-          <input id="j-room" placeholder="host ne jo naam rakha" maxlength="30" />
-        </div>
-        <div class="field">
-          <label>▸ SECRET PASSWORD</label>
-          <input id="j-pass" type="password" placeholder="host ne bataya hoga" maxlength="60" />
-        </div>
-        <div class="field">
-          <label>▸ HOST KA PEER ID (host se lo)</label>
-          <input id="j-peerid" placeholder="xxxx-xxxx-xxxx jaise" maxlength="60" />
-        </div>
-        <div class="field">
-          <label>▸ APNA NAAM</label>
-          <input id="j-name" placeholder="code name ya asli naam" maxlength="20" />
-        </div>
-        <div class="field">
-          <label>▸ APNA COLOR</label>
-          <div class="dots" id="j-dots">
-            <div class="dot" style="background:#00ff88" data-c="#00ff88"></div>
-            <div class="dot" style="background:#ffbb00" data-c="#ffbb00"></div>
-            <div class="dot on" style="background:#ff8844" data-c="#ff8844"></div>
-            <div class="dot" style="background:#44aaff" data-c="#44aaff"></div>
-            <div class="dot" style="background:#ff44aa" data-c="#ff44aa"></div>
-            <div class="dot" style="background:#cc88ff" data-c="#cc88ff"></div>
-          </div>
-        </div>
-        <button class="btn-main" onclick="startJoin()">▶ CONNECT KARO</button>
-      </div>
-
-      <div class="errmsg" id="err"></div>
-    </div>
-
-    <div class="footnote">
-      P2P encrypted &nbsp;•&nbsp; AES-256-GCM &nbsp;•&nbsp; koi data server pe nahi jata<br>
-      dono ko yahi file open karni hai • password match hona chahiye
-    </div>
-  </div>
-
-  <!-- ══ SCREEN 2: CONNECTING ══ -->
-  <div id="connecting" class="screen">
-    <div class="spinner"></div>
-    <div class="conn-title" id="conn-title">ROOM BAN RAHA HAI...</div>
-    <div class="conn-sub" id="conn-sub">Thoda wait karo...</div>
-
-    <div id="peer-id-box" style="display:none">
-      <div id="peer-id-label">▸ APNA PEER ID (dost ko bhejo)</div>
-      <div id="peer-id-val" onclick="copyPeerId()" title="Click to copy">...</div>
-      <div id="copy-hint">👆 click karo copy karne ke liye</div>
-    </div>
-
-    <div id="connect-form" style="display:none">
-      <input id="friend-id-input" placeholder="dost ka Peer ID yahan paste karo" />
-      <button onclick="connectToFriend()">CONNECT ▶</button>
-    </div>
-
-    <div class="conn-sub" id="conn-waiting" style="display:none; color: var(--amber);">
-      ⏳ Dost ke connect hone ka intezaar hai...
-    </div>
-  </div>
-
-  <!-- ══ SCREEN 3: CHAT ══ -->
-  <div id="chat" class="screen">
-    <div class="chat-hdr">
-      <div class="hdr-left">
-        <div class="hdr-room" id="hdr-room">☠ GHOST ROOM</div>
-        <div class="hdr-status">🔒 AES-256 E2E ENCRYPTED &nbsp;•&nbsp; <span class="conn-dot" id="conn-dot"></span> <span id="conn-label">CONNECTED</span></div>
-      </div>
-      <div class="hdr-right">
-        <div class="badge" id="hdr-name">ME</div>
-        <button class="btn-exit" onclick="exitRoom()">✕ EXIT</button>
-      </div>
-    </div>
-
-    <div class="msgs" id="msgs"></div>
-
-    <div class="enc-peek" id="enc-peek">// yahan tumhare message ki encrypted form dikhegi...</div>
-
-    <div class="input-row">
-      <textarea class="msg-box" id="mbox" placeholder="likho... (Enter = send, Shift+Enter = naya line)"
-        onkeydown="handleKey(event)" oninput="peekEnc()" disabled></textarea>
-      <button class="btn-send" id="sbtn" onclick="sendMsg()" disabled>SEND ▶</button>
-    </div>
-  </div>
-
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo">💬</div>
+  <h1>Ghost Room</h1>
+  <p>End-to-end encrypted</p>
 </div>
 
-<script>
-/* ═══════════════════════════════════════
-   STATE
-═══════════════════════════════════════ */
-let myName = '', myColor = '#00ff88', roomName = '', roomPass = '';
-let isHost = false;
-let peer = null, conn = null;
-let cryptoKey = null;
-let selectedColorHost = '#00ff88', selectedColorJoin = '#ff8844';
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="icon">🔒</span>
+      <h2>Ghost Room</h2>
+      <p>Private encrypted chat</p>
+    </div>
 
-/* ═══════════════════════════════════════
-   TAB SWITCH
-═══════════════════════════════════════ */
-function switchTab(t) {
-  document.getElementById('t-host').classList.toggle('on', t==='host');
-  document.getElementById('t-join').classList.toggle('on', t==='join');
-  document.getElementById('f-host').style.display = t==='host' ? 'block' : 'none';
-  document.getElementById('f-join').style.display = t==='join' ? 'block' : 'none';
-  document.getElementById('err').textContent = '';
+    <div class="tabs">
+      <div class="tab on" id="t-create" onclick="switchTab('create')">Create Room</div>
+      <div class="tab" id="t-join" onclick="switchTab('join')">Join Room</div>
+    </div>
+
+    <div id="f-create">
+      <div class="field">
+        <label>Room Name</label>
+        <input id="c-room" placeholder="e.g. squad, family, work" maxlength="30">
+      </div>
+      <div class="field">
+        <label>Password (share with friends)</label>
+        <input id="c-pass" type="password" placeholder="Strong password" maxlength="60">
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input id="c-name" placeholder="Your name or nickname" maxlength="20">
+      </div>
+      <div class="field">
+        <label>Your Avatar</label>
+        <div class="avatar-row" id="c-avs">
+          <div class="av on" data-av="😎">😎</div>
+          <div class="av" data-av="🦁">🦁</div>
+          <div class="av" data-av="🐺">🐺</div>
+          <div class="av" data-av="🦊">🦊</div>
+          <div class="av" data-av="🐻">🐻</div>
+          <div class="av" data-av="🐯">🐯</div>
+          <div class="av" data-av="🦅">🦅</div>
+          <div class="av" data-av="🤖">🤖</div>
+        </div>
+      </div>
+      <button class="btn" onclick="createRoom()">Create Room</button>
+    </div>
+
+    <div id="f-join" style="display:none">
+      <div class="field">
+        <label>Room Name</label>
+        <input id="j-room" placeholder="Same as host's room name" maxlength="30">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="j-pass" type="password" placeholder="Password from host" maxlength="60">
+      </div>
+      <div class="field">
+        <label>Host's Peer ID</label>
+        <input id="j-pid" placeholder="Paste host's ID here" maxlength="80">
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input id="j-name" placeholder="Your name or nickname" maxlength="20">
+      </div>
+      <div class="field">
+        <label>Your Avatar</label>
+        <div class="avatar-row" id="j-avs">
+          <div class="av" data-av="😎">😎</div>
+          <div class="av" data-av="🦁">🦁</div>
+          <div class="av on" data-av="🐺">🐺</div>
+          <div class="av" data-av="🦊">🦊</div>
+          <div class="av" data-av="🐻">🐻</div>
+          <div class="av" data-av="🐯">🐯</div>
+          <div class="av" data-av="🦅">🦅</div>
+          <div class="av" data-av="🤖">🤖</div>
+        </div>
+      </div>
+      <button class="btn" onclick="joinRoom()">Join Room</button>
+    </div>
+
+    <div class="errmsg" id="err"></div>
+  </div>
+</div>
+
+<!-- WAITING (HOST) -->
+<div id="waiting">
+  <div style="font-size:32px">🏠</div>
+  <div>
+    <div style="font-size:18px;font-weight:600" id="w-title">Setting up your room...</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px" id="w-sub">Please wait</div>
+  </div>
+
+  <div class="wait-card" id="w-idbox" style="display:none">
+    <div class="peer-label">Your Room ID — Share with friends</div>
+    <div class="peer-id" id="w-pid" onclick="copyId()">...</div>
+    <button class="copy-btn" onclick="copyId()" id="copy-btn">📋 Copy ID</button>
+  </div>
+
+  <div class="wait-card" id="w-members">
+    <div class="peer-label">Members (<span id="mem-count">1</span>/5)</div>
+    <div class="members-list" id="members-list"></div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text2)">Waiting for friends to connect...</div>
+    <button class="btn" style="margin-top:12px" onclick="openChat()" id="start-btn">Start Chatting →</button>
+  </div>
+
+  <div class="wait-card">
+    <div class="peer-label">Connect a friend manually</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">If friend already has the ID, they can join. Or paste their ID to invite:</div>
+    <div class="connect-row">
+      <input id="friend-pid" placeholder="Paste friend's Peer ID">
+      <button onclick="connectFriend()">Connect</button>
+    </div>
+  </div>
+
+  <button class="btn secondary" style="max-width:380px;width:100%" onclick="exitToLogin()">← Back</button>
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+  <div class="chat-hdr">
+    <div class="hdr-avatar" id="hdr-av">💬</div>
+    <div class="hdr-info">
+      <div class="hdr-name" id="hdr-name">Room</div>
+      <div class="hdr-status">
+        <div class="online-dot"></div>
+        <span id="hdr-count">0 members</span>
+      </div>
+    </div>
+    <div class="hdr-members" id="hdr-members"></div>
+    <button class="btn-exit-sm" onclick="exitRoom()" title="Leave">✕</button>
+  </div>
+
+  <div class="enc-badge">
+    🔒 Messages are end-to-end encrypted
+  </div>
+
+  <div class="msgs" id="msgs"></div>
+
+  <div class="input-area">
+    <div class="rec-bar" id="rec-bar">
+      <div class="rec-dot"></div>
+      <span>Recording... <span id="rec-time">0:00</span></span>
+      <button onclick="cancelRec()" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px">Cancel</button>
+    </div>
+    <div class="input-row">
+      <button class="icon-btn mic-btn" id="mic-btn" onclick="toggleRec()" title="Voice message">🎤</button>
+      <textarea class="msg-input" id="mbox" placeholder="Type a message..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)" disabled></textarea>
+      <button class="icon-btn send-btn" id="sbtn" onclick="sendMsg()" disabled>➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════ STATE ═══════════ */
+let myName='', myAv='😎', roomName='', roomPass='';
+let isHost=false, cryptoKey=null;
+let peer=null, myPeerId=null;
+let connections={}; // peerId -> conn
+let members={}; // peerId -> {name,av,color}
+let myColor='#25d366';
+let selectedAvCreate='😎', selectedAvJoin='🐺';
+
+const COLORS=['#25d366','#3b82f6','#f59e0b','#ef4444','#8b5cf6'];
+let myColorIndex=0;
+
+/* ═══════════ SPLASH ═══════════ */
+setTimeout(()=>{
+  document.getElementById('splash').style.opacity='0';
+  setTimeout(()=>{
+    document.getElementById('splash').style.display='none';
+    document.getElementById('login').style.display='flex';
+  },400);
+},1200);
+
+/* ═══════════ AVATAR SELECT ═══════════ */
+document.getElementById('c-avs').addEventListener('click',e=>{
+  const a=e.target.closest('.av'); if(!a) return;
+  document.querySelectorAll('#c-avs .av').forEach(x=>x.classList.remove('on'));
+  a.classList.add('on'); selectedAvCreate=a.dataset.av;
+});
+document.getElementById('j-avs').addEventListener('click',e=>{
+  const a=e.target.closest('.av'); if(!a) return;
+  document.querySelectorAll('#j-avs .av').forEach(x=>x.classList.remove('on'));
+  a.classList.add('on'); selectedAvJoin=a.dataset.av;
+});
+
+/* ═══════════ TABS ═══════════ */
+function switchTab(t){
+  document.getElementById('t-create').classList.toggle('on',t==='create');
+  document.getElementById('t-join').classList.toggle('on',t==='join');
+  document.getElementById('f-create').style.display=t==='create'?'block':'none';
+  document.getElementById('f-join').style.display=t==='join'?'block':'none';
+  document.getElementById('err').textContent='';
 }
 
-/* COLOR DOTS */
-document.getElementById('h-dots').addEventListener('click', e => {
-  const d = e.target.closest('.dot'); if (!d) return;
-  document.querySelectorAll('#h-dots .dot').forEach(x=>x.classList.remove('on'));
-  d.classList.add('on'); selectedColorHost = d.dataset.c;
-});
-document.getElementById('j-dots').addEventListener('click', e => {
-  const d = e.target.closest('.dot'); if (!d) return;
-  document.querySelectorAll('#j-dots .dot').forEach(x=>x.classList.remove('on'));
-  d.classList.add('on'); selectedColorJoin = d.dataset.c;
-});
-
-/* ═══════════════════════════════════════
-   CRYPTO — AES-256-GCM via PBKDF2
-═══════════════════════════════════════ */
-async function deriveKey(password, salt) {
-  const enc = new TextEncoder();
-  const km = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+/* ═══════════ CRYPTO ═══════════ */
+async function deriveKey(pass,salt){
+  const enc=new TextEncoder();
+  const km=await crypto.subtle.importKey('raw',enc.encode(pass),{name:'PBKDF2'},false,['deriveKey']);
   return crypto.subtle.deriveKey(
-    {name:'PBKDF2', salt: enc.encode(salt), iterations:150000, hash:'SHA-256'},
-    km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+    {name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},
+    km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']
   );
 }
-
-async function encrypt(text) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = new TextEncoder();
-  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, cryptoKey, enc.encode(text));
-  const out = new Uint8Array(12 + ct.byteLength);
-  out.set(iv); out.set(new Uint8Array(ct), 12);
+async function encrypt(obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=new TextEncoder();
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},cryptoKey,enc.encode(JSON.stringify(obj)));
+  const out=new Uint8Array(12+ct.byteLength);
+  out.set(iv); out.set(new Uint8Array(ct),12);
   return btoa(String.fromCharCode(...out));
 }
-
-async function decrypt(b64) {
-  try {
-    const data = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
-    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv: data.slice(0,12)}, cryptoKey, data.slice(12));
-    return new TextDecoder().decode(pt);
-  } catch { return null; }
+async function decrypt(b64){
+  try{
+    const d=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:d.slice(0,12)},cryptoKey,d.slice(12));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }catch{return null;}
 }
 
-/* ═══════════════════════════════════════
-   ERROR
-═══════════════════════════════════════ */
-function showErr(msg) { document.getElementById('err').textContent = msg; }
+/* ═══════════ ERROR ═══════════ */
+function showErr(m){document.getElementById('err').textContent=m;}
 
-/* ═══════════════════════════════════════
-   SCREEN SWITCH
-═══════════════════════════════════════ */
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+/* ═══════════ CREATE ROOM ═══════════ */
+async function createRoom(){
+  const rn=document.getElementById('c-room').value.trim();
+  const rp=document.getElementById('c-pass').value;
+  const nm=document.getElementById('c-name').value.trim();
+  if(!rn) return showErr('Please enter a room name');
+  if(!rp||rp.length<4) return showErr('Password must be at least 4 characters');
+  if(!nm) return showErr('Please enter your name');
 
-/* ═══════════════════════════════════════
-   HOST FLOW
-═══════════════════════════════════════ */
-async function startHost() {
-  const rn = document.getElementById('h-room').value.trim();
-  const rp = document.getElementById('h-pass').value;
-  const rname = document.getElementById('h-name').value.trim();
-  if (!rn) return showErr('▸ room ka naam daalo');
-  if (!rp || rp.length < 4) return showErr('▸ password kam se kam 4 characters ka hona chahiye');
-  if (!rname) return showErr('▸ apna naam daalo');
+  roomName=rn; roomPass=rp; myName=nm; myAv=selectedAvCreate;
+  isHost=true; myColor=COLORS[0];
+  cryptoKey=await deriveKey(rp,rn+'::ghost::v2');
 
-  roomName = rn; roomPass = rp; myName = rname; myColor = selectedColorHost; isHost = true;
-  cryptoKey = await deriveKey(rp, rn + '::ghostroom::v1');
+  document.getElementById('login').style.display='none';
+  document.getElementById('waiting').style.display='flex';
+  document.getElementById('w-title').textContent='Room ready!';
+  document.getElementById('w-sub').textContent='Share your ID with friends';
 
-  showScreen('connecting');
-  document.getElementById('conn-title').textContent = 'ROOM BAN RAHA HAI...';
-  document.getElementById('conn-sub').textContent = 'Peer connection tayar ho rahi hai...';
+  members[null]={name:myName,av:myAv,color:myColor}; // host self
+  updateMembersList();
 
-  peer = new Peer();
-
-  peer.on('open', id => {
-    document.getElementById('conn-title').textContent = '✓ ROOM READY HAI';
-    document.getElementById('conn-sub').textContent = 'Yeh Peer ID apne dost ko bhejo. Woh Join wale tab mein paste karega.';
-    document.getElementById('peer-id-box').style.display = 'block';
-    document.getElementById('peer-id-val').textContent = id;
-    document.getElementById('conn-waiting').style.display = 'block';
+  peer=new Peer();
+  peer.on('open',id=>{
+    myPeerId=id;
+    document.getElementById('w-idbox').style.display='block';
+    document.getElementById('w-pid').textContent=id;
   });
-
-  peer.on('connection', c => {
-    conn = c;
-    setupConn();
+  peer.on('connection',c=>{
+    if(Object.keys(connections).length>=4){c.close();return;}
+    setupConn(c);
   });
-
-  peer.on('error', e => {
-    document.getElementById('conn-title').textContent = '✗ ERROR';
-    document.getElementById('conn-sub').textContent = 'Connection mein masla: ' + e.message;
-  });
+  peer.on('error',e=>showToast('Connection error: '+e.message));
 }
 
-function copyPeerId() {
-  const id = document.getElementById('peer-id-val').textContent;
-  navigator.clipboard.writeText(id).catch(()=>{});
-  document.getElementById('copy-hint').textContent = '✓ Copy ho gaya!';
-  setTimeout(()=>{ document.getElementById('copy-hint').textContent = '👆 click karo copy karne ke liye'; }, 2000);
-}
+/* ═══════════ JOIN ROOM ═══════════ */
+async function joinRoom(){
+  const rn=document.getElementById('j-room').value.trim();
+  const rp=document.getElementById('j-pass').value;
+  const pid=document.getElementById('j-pid').value.trim();
+  const nm=document.getElementById('j-name').value.trim();
+  if(!rn) return showErr('Enter room name');
+  if(!rp) return showErr('Enter password');
+  if(!pid) return showErr("Enter host's Peer ID");
+  if(!nm) return showErr('Enter your name');
 
-/* ═══════════════════════════════════════
-   JOIN FLOW
-═══════════════════════════════════════ */
-async function startJoin() {
-  const rn = document.getElementById('j-room').value.trim();
-  const rp = document.getElementById('j-pass').value;
-  const pid = document.getElementById('j-peerid').value.trim();
-  const rname = document.getElementById('j-name').value.trim();
+  roomName=rn; roomPass=rp; myName=nm; myAv=selectedAvJoin;
+  isHost=false; myColor=COLORS[1];
+  cryptoKey=await deriveKey(rp,rn+'::ghost::v2');
 
-  if (!rn) return showErr('▸ room ka naam daalo');
-  if (!rp) return showErr('▸ password daalo');
-  if (!pid) return showErr('▸ host ka Peer ID daalo');
-  if (!rname) return showErr('▸ apna naam daalo');
+  document.getElementById('login').style.display='none';
+  document.getElementById('waiting').style.display='flex';
+  document.getElementById('w-title').textContent='Connecting...';
+  document.getElementById('w-sub').textContent='Joining room';
+  document.getElementById('w-members').style.display='none';
 
-  roomName = rn; roomPass = rp; myName = rname; myColor = selectedColorJoin; isHost = false;
-  cryptoKey = await deriveKey(rp, rn + '::ghostroom::v1');
-
-  showScreen('connecting');
-  document.getElementById('conn-title').textContent = 'CONNECT HO RAHA HAI...';
-  document.getElementById('conn-sub').textContent = 'Host se connection ban rahi hai...';
-
-  peer = new Peer();
-  peer.on('open', () => {
-    conn = peer.connect(pid, {reliable: true});
-    conn.on('open', () => setupConn());
-    conn.on('error', e => {
-      document.getElementById('conn-title').textContent = '✗ CONNECTION FAIL';
-      document.getElementById('conn-sub').textContent = 'Peer ID galat hai ya host online nahi: ' + e.message;
+  peer=new Peer();
+  peer.on('open',id=>{
+    myPeerId=id;
+    const c=peer.connect(pid,{reliable:true,serialization:'json'});
+    c.on('open',()=>setupConn(c));
+    c.on('error',e=>{
+      document.getElementById('w-title').textContent='Failed to connect';
+      document.getElementById('w-sub').textContent='Check Peer ID and try again';
     });
   });
-
-  peer.on('error', e => {
-    document.getElementById('conn-title').textContent = '✗ ERROR';
-    document.getElementById('conn-sub').textContent = e.message;
+  peer.on('connection',c=>setupConn(c)); // mesh: accept other members too
+  peer.on('error',e=>{
+    document.getElementById('w-title').textContent='Error';
+    document.getElementById('w-sub').textContent=e.message;
   });
 }
 
-/* ═══════════════════════════════════════
-   CONNECTION SETUP (shared host+join)
-═══════════════════════════════════════ */
-function setupConn() {
-  conn.on('open', async () => {
-    // Send handshake (encrypted)
-    const hs = await encrypt(JSON.stringify({type:'handshake', name: myName, color: myColor}));
-    conn.send({kind:'hs', data: hs});
+/* ═══════════ SETUP CONNECTION ═══════════ */
+function setupConn(c){
+  connections[c.peer]=c;
+  c.on('open',async()=>{
+    // send handshake
+    const hs=await encrypt({type:'hs',name:myName,av:myAv,color:myColor,room:roomName});
+    c.send({k:'hs',d:hs});
   });
-
-  conn.on('data', async raw => {
-    if (raw.kind === 'hs') {
-      const plain = await decrypt(raw.data);
-      if (plain === null) {
-        // Password mismatch
-        addSysMsg('⚠ Password galat lagta hai — dost ka password check karo!');
-        setOnline(false);
-        return;
-      }
-      const info = JSON.parse(plain);
-      if (info.type === 'handshake') {
-        openChat(info.name);
-        return;
-      }
+  c.on('data',async raw=>{
+    const obj=await decrypt(raw.d);
+    if(!obj){
+      showToast('⚠ Wrong password or tampered message');
+      return;
     }
-    if (raw.kind === 'msg') {
-      const plain = await decrypt(raw.data);
-      if (plain === null) { addSysMsg('⚠ Ek message decrypt nahi hua'); return; }
-      const obj = JSON.parse(plain);
-      renderMsg(obj.name, obj.color, obj.text, obj.time, false, obj.enc);
+    if(obj.type==='hs'){
+      members[c.peer]={name:obj.name,av:obj.av,color:obj.color};
+      updateMembersList();
+      updateHdrMembers();
+      addSysMsg(obj.name+' joined the room 👋');
+      // if host, broadcast new member list to all
+      if(isHost) broadcastMembers();
+      // open chat if not already
+      if(document.getElementById('chat').style.display!=='flex') openChat();
+      return;
+    }
+    if(obj.type==='members'){
+      // update members from host broadcast
+      obj.list.forEach(m=>{if(m.pid!==myPeerId) members[m.pid]={name:m.name,av:m.av,color:m.color};});
+      updateHdrMembers();
+      return;
+    }
+    if(obj.type==='msg'){
+      const info=members[c.peer]||{name:'Unknown',av:'👤',color:'#aaa'};
+      renderMsg(info.name,info.av,info.color,obj.text,obj.time,false);
+      return;
+    }
+    if(obj.type==='voice'){
+      const info=members[c.peer]||{name:'Unknown',av:'👤',color:'#aaa'};
+      renderVoice(info.name,info.av,info.color,obj.data,obj.dur,obj.time,false);
+      return;
+    }
+    if(obj.type==='relay'&&isHost){
+      // relay msg to all others
+      Object.entries(connections).forEach(([pid,conn])=>{
+        if(pid!==c.peer&&conn.open) conn.send(raw);
+      });
     }
   });
-
-  conn.on('close', () => {
-    setOnline(false);
-    addSysMsg('❌ Dost disconnect ho gaya');
+  c.on('close',()=>{
+    const info=members[c.peer];
+    if(info) addSysMsg(info.name+' left the room');
+    delete connections[c.peer];
+    delete members[c.peer];
+    updateMembersList();
+    updateHdrMembers();
   });
-  conn.on('error', () => {
-    setOnline(false);
-    addSysMsg('⚠ Connection error');
-  });
-
-  // If host receiving connection, also do handshake on 'open' which fires differently
-  if (isHost && conn.open) {
-    (async () => {
-      const hs = await encrypt(JSON.stringify({type:'handshake', name: myName, color: myColor}));
-      conn.send({kind:'hs', data: hs});
-    })();
-  }
+  c.on('error',()=>{delete connections[c.peer];delete members[c.peer];});
 }
 
-/* ═══════════════════════════════════════
-   OPEN CHAT
-═══════════════════════════════════════ */
-function openChat(friendName) {
-  showScreen('chat');
-  document.getElementById('hdr-room').textContent = '☠ ' + roomName.toUpperCase();
-  document.getElementById('hdr-name').textContent = myName;
-  setOnline(true);
-  document.getElementById('mbox').disabled = false;
-  document.getElementById('sbtn').disabled = false;
-  addSysMsg('🔐 Secure connection ban gayi — AES-256 encrypted');
-  addSysMsg('✓ ' + friendName + ' room mein aa gaya');
+/* ═══════════ BROADCAST ═══════════ */
+async function broadcast(obj, exclude=null){
+  const enc=await encrypt(obj);
+  Object.entries(connections).forEach(([pid,conn])=>{
+    if(pid!==exclude&&conn.open) conn.send({k:'msg',d:enc});
+  });
+}
+
+async function broadcastMembers(){
+  const list=Object.entries(members).map(([pid,m])=>({pid,name:m.name,av:m.av,color:m.color}));
+  await broadcast({type:'members',list});
+}
+
+/* ═══════════ CONNECT FRIEND (manual) ═══════════ */
+function connectFriend(){
+  const pid=document.getElementById('friend-pid').value.trim();
+  if(!pid) return;
+  if(Object.keys(connections).length>=4){showToast('Room is full (max 5 members)');return;}
+  const c=peer.connect(pid,{reliable:true,serialization:'json'});
+  c.on('open',()=>setupConn(c));
+  c.on('error',()=>showToast('Could not connect'));
+  document.getElementById('friend-pid').value='';
+}
+
+/* ═══════════ MEMBERS LIST ═══════════ */
+function updateMembersList(){
+  const list=document.getElementById('members-list');
+  const count=1+Object.keys(connections).length;
+  document.getElementById('mem-count').textContent=count;
+  list.innerHTML='';
+  // self
+  const selfDiv=document.createElement('div');
+  selfDiv.className='member-item';
+  selfDiv.innerHTML=`<div class="member-avatar">${myAv}</div><span>${myName} <span style="color:var(--accent);font-size:11px">(you)</span></span>`;
+  list.appendChild(selfDiv);
+  // others
+  Object.values(members).forEach(m=>{
+    if(!m) return;
+    const d=document.createElement('div');
+    d.className='member-item';
+    d.innerHTML=`<div class="member-avatar">${m.av}</div><span>${m.name}</span>`;
+    list.appendChild(d);
+  });
+}
+
+function updateHdrMembers(){
+  const el=document.getElementById('hdr-members');
+  el.innerHTML='';
+  const all=[{av:myAv},...Object.values(members).filter(Boolean)];
+  all.slice(0,4).forEach(m=>{
+    const d=document.createElement('div');
+    d.className='hdr-av';
+    d.textContent=m.av;
+    el.appendChild(d);
+  });
+  const cnt=1+Object.keys(members).length;
+  document.getElementById('hdr-count').textContent=cnt+' member'+(cnt>1?'s':'');
+}
+
+/* ═══════════ COPY ID ═══════════ */
+function copyId(){
+  navigator.clipboard.writeText(myPeerId).catch(()=>{});
+  document.getElementById('copy-btn').textContent='✅ Copied!';
+  setTimeout(()=>document.getElementById('copy-btn').textContent='📋 Copy ID',2000);
+}
+
+/* ═══════════ OPEN CHAT ═══════════ */
+function openChat(){
+  document.getElementById('waiting').style.display='none';
+  const chatEl=document.getElementById('chat');
+  chatEl.style.display='flex';
+  document.getElementById('hdr-name').textContent=roomName;
+  document.getElementById('hdr-av').textContent='💬';
+  document.getElementById('mbox').disabled=false;
+  document.getElementById('sbtn').disabled=false;
+  document.getElementById('mic-btn').disabled=false;
+  updateHdrMembers();
+
+  // today date divider
+  const today=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const d=document.createElement('div');
+  d.className='date-div'; d.textContent=today;
+  document.getElementById('msgs').appendChild(d);
+
+  addSysMsg('🔒 This chat is end-to-end encrypted');
   document.getElementById('mbox').focus();
 }
 
-function setOnline(on) {
-  const dot = document.getElementById('conn-dot');
-  const lbl = document.getElementById('conn-label');
-  dot.classList.toggle('offline', !on);
-  lbl.textContent = on ? 'CONNECTED' : 'DISCONNECTED';
-  document.getElementById('mbox').disabled = !on;
-  document.getElementById('sbtn').disabled = !on;
-}
-
-/* ═══════════════════════════════════════
-   MESSAGES
-═══════════════════════════════════════ */
-function addSysMsg(text) {
-  const el = document.createElement('div');
-  el.className = 'sysmsg'; el.textContent = text;
+/* ═══════════ MESSAGES ═══════════ */
+function addSysMsg(text){
+  const el=document.createElement('div');
+  el.className='sys-msg'; el.textContent=text;
   document.getElementById('msgs').appendChild(el);
   scrollBottom();
 }
 
-function renderMsg(name, color, text, time, isMe, encStr) {
-  const wrap = document.createElement('div');
-  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+function renderMsg(name,av,color,text,time,isMe){
+  const wrap=document.createElement('div');
+  wrap.className='msg-row '+(isMe?'me':'them');
 
-  const meta = document.createElement('div');
-  meta.className = 'msg-meta';
-  meta.style.color = color;
-  meta.textContent = name + ' · ' + time;
-
-  const bubble = document.createElement('div');
-  bubble.className = 'msg-bubble';
-  bubble.style.color = color;
-  if (!isMe) {
-    bubble.style.background = color + '11';
-    bubble.style.border = '1px solid ' + color + '33';
+  if(!isMe){
+    const sdr=document.createElement('div');
+    sdr.className='msg-sender';
+    sdr.style.color=color;
+    sdr.textContent=av+' '+name;
+    wrap.appendChild(sdr);
   }
-  bubble.textContent = text;
 
-  const enc = document.createElement('div');
-  enc.className = 'msg-enc';
-  enc.textContent = '🔒 ' + encStr.substring(0, 44) + '...';
+  const bub=document.createElement('div');
+  bub.className='bubble';
+  bub.textContent=text;
 
-  wrap.appendChild(meta);
-  wrap.appendChild(bubble);
-  wrap.appendChild(enc);
+  const tm=document.createElement('div');
+  tm.className='msg-time'; tm.textContent=time;
+
+  wrap.appendChild(bub);
+  wrap.appendChild(tm);
   document.getElementById('msgs').appendChild(wrap);
   scrollBottom();
 }
 
-function scrollBottom() {
-  const m = document.getElementById('msgs');
-  m.scrollTop = m.scrollHeight;
-}
+/* ═══════════ VOICE MESSAGES ═══════════ */
+function renderVoice(name,av,color,audioData,dur,time,isMe){
+  const wrap=document.createElement('div');
+  wrap.className='msg-row '+(isMe?'me':'them');
 
-/* ═══════════════════════════════════════
-   SEND
-═══════════════════════════════════════ */
-async function sendMsg() {
-  const box = document.getElementById('mbox');
-  const text = box.value.trim();
-  if (!text || !conn || !conn.open) return;
-
-  const now = new Date();
-  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-
-  const payload = JSON.stringify({name: myName, color: myColor, text, time});
-  const encStr = await encrypt(payload);
-
-  conn.send({kind: 'msg', data: encStr});
-  renderMsg(myName, myColor, text, time, true, encStr);
-
-  box.value = '';
-  box.style.height = 'auto';
-  document.getElementById('enc-peek').textContent = '// encrypted form yahan dikhegi...';
-}
-
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
-}
-
-async function peekEnc() {
-  const text = document.getElementById('mbox').value;
-  if (!text || !cryptoKey) {
-    document.getElementById('enc-peek').textContent = '// encrypted form yahan dikhegi...';
-    return;
+  if(!isMe){
+    const sdr=document.createElement('div');
+    sdr.className='msg-sender';
+    sdr.style.color=color;
+    sdr.textContent=av+' '+name;
+    wrap.appendChild(sdr);
   }
-  const enc = await encrypt(text);
-  document.getElementById('enc-peek').textContent = '🔒 ' + enc.substring(0,60) + '...';
+
+  const vbub=document.createElement('div');
+  vbub.className='voice-bubble';
+
+  // generate fake waveform bars (20 bars)
+  const bars=Array.from({length:20},()=>Math.random()*.7+.3);
+
+  const playBtn=document.createElement('button');
+  playBtn.className='play-btn';
+  playBtn.textContent='▶';
+
+  const waveDiv=document.createElement('div');
+  waveDiv.className='waveform';
+  bars.forEach((h,i)=>{
+    const b=document.createElement('div');
+    b.className='wave-bar';
+    b.style.height=(h*28)+'px';
+    waveDiv.appendChild(b);
+  });
+
+  const durDiv=document.createElement('div');
+  durDiv.className='voice-dur';
+  durDiv.textContent=formatDur(dur);
+
+  vbub.appendChild(playBtn);
+  vbub.appendChild(waveDiv);
+  vbub.appendChild(durDiv);
+
+  // audio playback
+  let audio=null, playing=false, interval=null;
+  playBtn.onclick=()=>{
+    if(playing){
+      if(audio){audio.pause();audio.currentTime=0;}
+      clearInterval(interval);
+      playing=false;
+      playBtn.textContent='▶';
+      playBtn.classList.remove('playing');
+      Array.from(waveDiv.children).forEach(b=>b.classList.remove('played','active'));
+      durDiv.textContent=formatDur(dur);
+      return;
+    }
+    // decode base64 and play
+    const byteStr=atob(audioData);
+    const arr=new Uint8Array(byteStr.length);
+    for(let i=0;i<byteStr.length;i++) arr[i]=byteStr.charCodeAt(i);
+    const blob=new Blob([arr],{type:'audio/webm;codecs=opus'});
+    const url=URL.createObjectURL(blob);
+    audio=new Audio(url);
+    audio.play().catch(()=>{});
+    playing=true;
+    playBtn.textContent='⏹';
+    playBtn.classList.add('playing');
+    const totalBars=waveDiv.children.length;
+    let idx=0;
+    interval=setInterval(()=>{
+      if(!playing||!audio) return;
+      const prog=audio.currentTime/Math.max(audio.duration||dur,0.1);
+      const newIdx=Math.floor(prog*totalBars);
+      while(idx<newIdx&&idx<totalBars){
+        waveDiv.children[idx].classList.add('played');
+        waveDiv.children[idx].classList.remove('active');
+        idx++;
+      }
+      if(idx<totalBars) waveDiv.children[idx].classList.add('active');
+      durDiv.textContent=formatDur(audio.currentTime);
+    },100);
+    audio.onended=()=>{
+      clearInterval(interval);
+      playing=false;
+      playBtn.textContent='▶';
+      playBtn.classList.remove('playing');
+      Array.from(waveDiv.children).forEach(b=>b.classList.remove('played','active'));
+      durDiv.textContent=formatDur(dur);
+    };
+  };
+
+  const tm=document.createElement('div');
+  tm.className='msg-time'; tm.textContent=time;
+
+  wrap.appendChild(vbub);
+  wrap.appendChild(tm);
+  document.getElementById('msgs').appendChild(wrap);
+  scrollBottom();
 }
 
-/* ═══════════════════════════════════════
-   EXIT
-═══════════════════════════════════════ */
-function exitRoom() {
-  if (conn) conn.close();
-  if (peer) peer.destroy();
-  conn = null; peer = null; cryptoKey = null;
-  document.getElementById('msgs').innerHTML = '';
-  document.getElementById('enc-peek').textContent = '// encrypted form yahan dikhegi...';
-  showScreen('login');
+function formatDur(s){
+  const sec=Math.floor(s);
+  return Math.floor(sec/60)+':'+(sec%60).toString().padStart(2,'0');
+}
+
+/* ═══════════ SEND TEXT ═══════════ */
+async function sendMsg(){
+  const box=document.getElementById('mbox');
+  const text=box.value.trim();
+  if(!text) return;
+  const now=new Date();
+  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const obj={type:'msg',text,time};
+  renderMsg(myName,myAv,myColor,text,time,true);
+  await broadcast(obj);
+  box.value=''; box.style.height='auto';
+}
+
+function handleKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+}
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,100)+'px';
+}
+
+/* ═══════════ VOICE RECORDING ═══════════ */
+let mediaRec=null, recChunks=[], recStart=0, recTimer=null, recStream=null;
+let isRecording=false;
+
+async function toggleRec(){
+  if(isRecording){stopRec();return;}
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRec=new MediaRecorder(recStream,{mimeType:'audio/webm;codecs=opus'});
+    recChunks=[];
+    mediaRec.ondataavailable=e=>{if(e.data.size>0) recChunks.push(e.data);};
+    mediaRec.onstop=async()=>{
+      const blob=new Blob(recChunks,{type:'audio/webm;codecs=opus'});
+      const dur=(Date.now()-recStart)/1000;
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        const b64=reader.result.split(',')[1];
+        const now=new Date();
+        const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+        renderVoice(myName,myAv,myColor,b64,dur,time,true);
+        await broadcast({type:'voice',data:b64,dur,time});
+      };
+      reader.readAsDataURL(blob);
+      recStream.getTracks().forEach(t=>t.stop());
+    };
+    mediaRec.start(100);
+    isRecording=true;
+    recStart=Date.now();
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('rec-bar').classList.add('show');
+    document.getElementById('mbox').style.display='none';
+    document.getElementById('sbtn').style.display='none';
+    recTimer=setInterval(()=>{
+      const s=(Date.now()-recStart)/1000;
+      document.getElementById('rec-time').textContent=formatDur(s);
+    },500);
+  }catch(e){
+    showToast('Microphone access denied');
+  }
+}
+
+function stopRec(){
+  if(!isRecording) return;
+  clearInterval(recTimer);
+  isRecording=false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('rec-bar').classList.remove('show');
+  document.getElementById('mbox').style.display='';
+  document.getElementById('sbtn').style.display='';
+  if(mediaRec&&mediaRec.state!=='inactive') mediaRec.stop();
+}
+
+function cancelRec(){
+  clearInterval(recTimer);
+  isRecording=false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('rec-bar').classList.remove('show');
+  document.getElementById('mbox').style.display='';
+  document.getElementById('sbtn').style.display='';
+  recChunks=[];
+  if(mediaRec&&mediaRec.state!=='inactive'){
+    mediaRec.ondataavailable=null;
+    mediaRec.onstop=null;
+    mediaRec.stop();
+  }
+  if(recStream) recStream.getTracks().forEach(t=>t.stop());
+}
+
+/* ═══════════ SCROLL ═══════════ */
+function scrollBottom(){
+  const m=document.getElementById('msgs');
+  m.scrollTop=m.scrollHeight;
+}
+
+/* ═══════════ TOAST ═══════════ */
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+/* ═══════════ EXIT ═══════════ */
+function exitRoom(){
+  if(confirm('Leave the room?')){
+    cleanup();
+    location.reload();
+  }
+}
+function exitToLogin(){
+  cleanup();
+  document.getElementById('waiting').style.display='none';
+  document.getElementById('login').style.display='flex';
+}
+function cleanup(){
+  Object.values(connections).forEach(c=>{try{c.close();}catch{}});
+  if(peer){try{peer.destroy();}catch{}}
+  connections={}; members={}; peer=null; cryptoKey=null;
+  cancelRec();
 }
 </script>
 </body>
